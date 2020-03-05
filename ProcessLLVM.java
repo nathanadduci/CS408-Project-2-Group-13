@@ -19,14 +19,19 @@ public class ProcessLLVM {
                 try {
                     if (line.charAt(0) == 'C') {
                         firstIndex = line.indexOf('\'') + 1;
-                        set.add(line.substring(firstIndex, line.indexOf('\'', firstIndex)));
+                        if(firstIndex == 0) {
+                            firstIndex = line.indexOf('<')+2;
+                            set.add(line.substring(firstIndex, line.indexOf('>')));
+                        } else {
+                            set.add(line.substring(firstIndex, line.indexOf('\'', firstIndex)));
+                        }
                     }
                 } catch (IndexOutOfBoundsException e) {}
 
                 line = reader.readLine();
             }
 
-            //System.out.println(set.toString());
+            System.out.println(set.toString());
         } catch (IOException e) {
             e.printStackTrace();
         }
