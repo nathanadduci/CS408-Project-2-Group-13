@@ -5,13 +5,25 @@ import java.util.HashMap;
 import java.util.HashSet;
 
 public class ProcessLLVM {
-    private static String OUTPUT_PATH = "mainout.txt";
-    private static double cThresh = 0.65;
-    private static Integer sThresh = 3;
-    private static int expandBy = 2;
+    private static String OUTPUT_PATH;// = "mainout.txt";
+    private static double cThresh;// = 0.65;
+    private static Integer sThresh;// = 3;
+    private static int expandBy;// = 2;
 
     public static void main(String[] args) {
         //HashSet<String> set = new HashSet<>();
+        for(String s : args) {
+            System.out.println(s);
+        }
+        System.out.println();
+        if(args.length > 2) {
+            OUTPUT_PATH = args[0];
+            cThresh = Double.parseDouble(args[1]);
+            sThresh = Integer.parseInt(args[2]);
+        } if(args.length > 3) {
+            expandBy = Integer.parseInt(args[3]);
+        }
+
 
         //Getting optout.txt comes from args[0], not from a file reader.
         HashMap<String, HashSet<String>> graph = new HashMap<String, HashSet<String>>();
@@ -164,7 +176,6 @@ public class ProcessLLVM {
             //System.out.println(key+":");
             for (int a = 0; a < vals.length; a++) {
                 for(int b = a + 1; b < vals.length; b++){
-                    //Pair<String, String> key = getPair(vals[i],vals[j], 0);
                     //if((vals[a].equals("ap_exists_config_define") && vals[b].equals("apr_file_open_stdout")) || (vals[b].equals("ap_exists_config_define") && vals[a].equals("apr_file_open_stdout"))){
                     //    System.out.println(key+": "+ vals[a] + ", " + vals[b]);
                     //}
