@@ -298,7 +298,7 @@ public class ProcessLLVM {
             graphExp.put(entry.getKey(), new HashSet<String>());
             HashSet<String> srcExpanded = new HashSet<String>();
             int expanded = 0;
-            while(expandBy > expanded) {
+            while(expandBy >= expanded) {
                 //System.out.println(expanded);
                 for (String src : entry.getValue().toArray(new String[0])) {
                     graphExp.get(entry.getKey()).add(src);
