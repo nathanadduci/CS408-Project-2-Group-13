@@ -8,7 +8,9 @@ public class ProcessLLVM {
     private static final String OUTPUT_PATH = "optout.txt";
 
     public static void main(String[] args) {
-        HashSet<String> set = new HashSet<>();
+        //HashSet<String> set = new HashSet<>();
+
+        HashMap<String, HashSet<String>> graph = new HashMap<String, HashSet<String>>();
 
         BufferedReader reader;
         try {
@@ -19,21 +21,38 @@ public class ProcessLLVM {
                 try {
                     if (line.charAt(0) == 'C') {
                         firstIndex = line.indexOf('\'') + 1;
+                        String key;
                         if(firstIndex == 0) {
-                            firstIndex = line.indexOf('<')+2;
-                            set.add(line.substring(firstIndex, line.indexOf('>')));
+                            firstIndex = line.indexOf('<') + 2;
+                            key = line.substring(firstIndex, line.indexOf('>'));
                         } else {
-                            set.add(line.substring(firstIndex, line.indexOf('\'', firstIndex)));
+                            key = line.substring(firstIndex, line.indexOf('\'', firstIndex));
+                        }
+                        while(line != null && line.charAt(0) == ' ') {
+                            firstIndex = line.indexOf('\'') + 1;
+                            if(graph.get(key) != null) {
+                                HashSet<String> gSet = new HashSet<String>();
+                                gSet.add(line.substring(firstIndex, line.indexOf('\'', firstIndex)));
+                                graph.put(key, (HashSet)gSet.clone());
+                            }
+                            graph.get(key).add(line.substring(firstIndex, line.indexOf('\'', firstIndex)));
                         }
                     }
                 } catch (IndexOutOfBoundsException e) {}
 
                 line = reader.readLine();
             }
-
-            System.out.println(set.toString());
         } catch (IOException e) {
             e.printStackTrace();
+        }
+
+        for (HashMap.Entry<String, HashSet<String>> entry : graph.entrySet()) {
+            String key = entry.getKey();
+            HashSet<String> val = entry.getValue();
+            System.out.print(key + ": " + val.toArray()[0]);
+            for (String str : (String[])val.toArray()) {
+                System.out.print(", " + str);
+            }
         }
     }
 }
