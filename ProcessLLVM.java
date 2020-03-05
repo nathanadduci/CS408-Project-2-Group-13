@@ -5,7 +5,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 
 public class ProcessLLVM {
-    private static final String OUTPUT_PATH = "optout.txt";
+    private static final String OUTPUT_PATH = "helloout.txt";
 
     public static void main(String[] args) {
         //HashSet<String> set = new HashSet<>();
@@ -18,7 +18,7 @@ public class ProcessLLVM {
 
         HashMap<String, Integer> covg = getCoverage(graph);
 
-        /**
+        //**
         //Printing to debug graph coverage.
          for (HashMap.Entry<String, Integer> entry : covg.entrySet()) {
             String key = entry.getKey();
@@ -28,7 +28,7 @@ public class ProcessLLVM {
 
         HashMap<String, HashMap<String, Integer>> covp = getPairCoverage(graph);
 
-        /**
+        //**
         //Printing to debug graph coverage.
         for (HashMap.Entry<String, HashMap<String, Integer>> entry : covp.entrySet()) {
             String key = entry.getKey();
@@ -173,6 +173,7 @@ public class ProcessLLVM {
             while (line != null) {
                 try {
                     if (line.charAt(0) == 'C') {
+                        System.out.println(line);
                         firstIndex = line.indexOf('\'') + 1;
                         String key;
                         //To get the function <<null function>> this case is required.
@@ -184,6 +185,7 @@ public class ProcessLLVM {
                         }
                         line = reader.readLine();
                         while(line != null && line.charAt(0) == ' ') {
+                            System.out.println("::"+line);
                             firstIndex = line.indexOf('\'') + 1;
                             if(graph.get(key) == null) {
                                 HashSet<String> gSet = new HashSet<String>();
