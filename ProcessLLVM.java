@@ -23,7 +23,7 @@ public class ProcessLLVM {
             sThresh = Integer.parseInt(args[2]);
         } if(args.length > 4) {
             if(args[3].equals("-c")) {
-                expandBy = Integer.parseInt(args[3]);
+                expandBy = Integer.parseInt(args[4]);
             } else if(args[3].equals("-d")) {
                 //Correction for
             }
