@@ -8,20 +8,20 @@ public class ProcessLLVM {
     private static String OUTPUT_PATH = "mainout.txt";
     private static double cThresh = 0.65;
     private static Integer sThresh = 3;
-    private static boolean expanded = true;
+    private static int expandBy = 2;
 
     public static void main(String[] args) {
         //HashSet<String> set = new HashSet<>();
 
         //Getting optout.txt comes from args[0], not from a file reader.
         HashMap<String, HashSet<String>> graph = new HashMap<String, HashSet<String>>();
-        if(expanded){
-            graph = getExpandedGraph(getGraph());
+        if(expandBy > 0){
+            graph = getExpandedGraph(getGraph(), expandBy);
         } else {
             graph = getGraph();
         }
 
-         //**
+         /**
          // Basic printing for testing graph completion / correctness.
          for (HashMap.Entry<String, HashSet<String>> entry : graph.entrySet()) {
              String key = entry.getKey();
@@ -250,7 +250,7 @@ public class ProcessLLVM {
         return graph;
     }
 
-    public static HashMap<String, HashSet<String>> getExpandedGraph(HashMap<String, HashSet<String>> graph){
+    public static HashMap<String, HashSet<String>> getExpandedGraph(HashMap<String, HashSet<String>> graph, int expandBy){
         HashMap<String, HashSet<String>> graphExp = new HashMap<String, HashSet<String>>();
         /**
         BufferedReader reader;
@@ -296,15 +296,22 @@ public class ProcessLLVM {
         }//*/
         for(HashMap.Entry<String, HashSet<String>> entry : graph.entrySet()){
             graphExp.put(entry.getKey(), new HashSet<String>());
-            for(String src : entry.getValue().toArray(new String[0])){
-                graphExp.get(entry.getKey()).add(src);
-                //System.out.println(graph.get(src));
-                if(graph.get(src) != null) {
-                    for (String exp : graph.get(src)) {
-                        graphExp.get(entry.getKey()).add(exp);
+            HashSet<String> srcExpanded = new HashSet<String>();
+            int expanded = 0;
+            while(expandBy > expanded) {
+                //System.out.println(expanded);
+                for (String src : entry.getValue().toArray(new String[0])) {
+                    graphExp.get(entry.getKey()).add(src);
+                    //System.out.println(graph.get(src));
+                    if (graph.get(src) != null && !srcExpanded.contains(src)) {
+                        for (String exp : graph.get(src)) {
+                            graphExp.get(entry.getKey()).add(exp);
+                        }
+                        graphExp.get(entry.getKey()).remove(entry.getKey());
+                        srcExpanded.add(src);
                     }
-                    graphExp.get(entry.getKey()).remove(entry.getKey());
                 }
+                expanded++;
             }
         }
         return graphExp;
