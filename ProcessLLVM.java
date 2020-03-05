@@ -36,6 +36,7 @@ public class ProcessLLVM {
                                 gSet.add(line.substring(firstIndex, line.indexOf('\'', firstIndex)));
                                 graph.put(key, (HashSet)gSet.clone());
                             }
+                            System.out.println("Key:" + key + "\nValue:"+line.substring(firstIndex, line.indexOf('\'', firstIndex))+"\n" );
                             graph.get(key).add(line.substring(firstIndex, line.indexOf('\'', firstIndex)));
                             line = reader.readLine();
                         }
