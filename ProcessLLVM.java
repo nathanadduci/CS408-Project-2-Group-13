@@ -31,12 +31,12 @@ public class ProcessLLVM {
                         line = reader.readLine();
                         while(line != null && line.charAt(0) == ' ') {
                             firstIndex = line.indexOf('\'') + 1;
-                            if(graph.get(key) != null) {
+                            if(graph.get(key) == null) {
                                 HashSet<String> gSet = new HashSet<String>();
                                 gSet.add(line.substring(firstIndex, line.indexOf('\'', firstIndex)));
                                 graph.put(key, (HashSet)gSet.clone());
                             }
-                            System.out.println("Key:" + key + "\nValue:"+line.substring(firstIndex, line.indexOf('\'', firstIndex))+"\n" );
+                            //System.out.println("Key:" + key + "\nValue:"+line.substring(firstIndex, line.indexOf('\'', firstIndex))+"\nSize:"+graph.size()+"\n" );
                             graph.get(key).add(line.substring(firstIndex, line.indexOf('\'', firstIndex)));
                             line = reader.readLine();
                         }
