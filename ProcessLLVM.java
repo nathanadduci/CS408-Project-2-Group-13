@@ -53,8 +53,8 @@ public class ProcessLLVM {
         for (HashMap.Entry<String, HashSet<String>> entry : graph.entrySet()) {
             String key = entry.getKey();
             HashSet<String> val = entry.getValue();
-            System.out.print(key + ": " + val.toArray()[0]);
-            for (String str : (String[])val.toArray()) {
+            System.out.print(key + ": {" + val.toArray()[0]);
+            for (String str : val) {
                 System.out.print(", " + str);
             }
             System.out.println("}");
