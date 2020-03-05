@@ -12,16 +12,21 @@ public class ProcessLLVM {
 
     public static void main(String[] args) {
         //HashSet<String> set = new HashSet<>();
+        /**
         for(String s : args) {
             System.out.println(s);
         }
-        System.out.println();
+        System.out.println();//*/
         if(args.length > 2) {
             OUTPUT_PATH = args[0];
             cThresh = Double.parseDouble(args[1]);
             sThresh = Integer.parseInt(args[2]);
-        } if(args.length > 3) {
-            expandBy = Integer.parseInt(args[3]);
+        } if(args.length > 4) {
+            if(args[3].equals("-c")) {
+                expandBy = Integer.parseInt(args[3]);
+            } else if(args[3].equals("-d")) {
+                //Correction for
+            }
         }
 
 
