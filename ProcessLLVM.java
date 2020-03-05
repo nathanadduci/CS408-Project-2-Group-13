@@ -5,7 +5,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 
 public class ProcessLLVM {
-    private static final String OUTPUT_PATH = "helloout.txt";
+    private static final String OUTPUT_PATH = "optout.txt";
 
     public static void main(String[] args) {
         //HashSet<String> set = new HashSet<>();
@@ -13,12 +13,31 @@ public class ProcessLLVM {
         //Getting optout.txt comes from args[0], not from a file reader.
         HashMap<String, HashSet<String>> graph = getGraph();
 
+         /**
+         // Basic printing for testing graph completion / correctness.
+         for (HashMap.Entry<String, HashSet<String>> entry : graph.entrySet()) {
+             String key = entry.getKey();
+             HashSet<String> val = entry.getValue();
+             if(key.equals("ap_read_config")) {
+                 System.out.print(key + ": {" + val.toArray()[0]);
+                 boolean b = false;
+                 for (String str : val) {
+                     if (b) {
+                         System.out.print(", " + str);
+                     } else {
+                         b = true;
+                     }
+                 }
+                 System.out.println("}");
+             }
+         }//*/
+
         double cThresh = 0.65;
         Integer sThresh = 3;
 
         HashMap<String, Integer> covg = getCoverage(graph);
 
-        //**
+        /**
         //Printing to debug graph coverage.
          for (HashMap.Entry<String, Integer> entry : covg.entrySet()) {
             String key = entry.getKey();
@@ -28,13 +47,13 @@ public class ProcessLLVM {
 
         HashMap<String, HashMap<String, Integer>> covp = getPairCoverage(graph);
 
-        //**
+        /**
         //Printing to debug graph coverage.
         for (HashMap.Entry<String, HashMap<String, Integer>> entry : covp.entrySet()) {
             String key = entry.getKey();
             HashMap<String, Integer> map2 = entry.getValue();
             for(HashMap.Entry<String, Integer> entry2 : map2.entrySet()){
-                System.out.println("("+key+", "+entry2.getKey()+"): "+entry2.getValue());
+                //System.out.println("("+key+", "+entry2.getKey()+"): "+entry2.getValue());
             }
             // System.out.println("("+key.getKey() + ", " + key.getValue() + "): " + val);
         }//*/
@@ -59,56 +78,60 @@ public class ProcessLLVM {
                 }
             }
         }
-
+        /**
         for(HashMap.Entry<String, HashMap<String, Double>> entry : confidences.entrySet()){
             for(HashMap.Entry<String, Double> entry2 : entry.getValue().entrySet()){
                 System.out.printf("%.2f%%\t%s\t%s\n", entry2.getValue().doubleValue()*100.00, entry.getKey(), entry2.getKey());
             }
-        }
+        }//*/
+
+        int bugCount = 0;
 
         for(HashMap.Entry<String, HashSet<String>> entry : graph.entrySet()) {
             String scope = entry.getKey();
-            String[] vals = new String[entry.getValue().size()];
+            String[] vals = new String[0];//entry.getValue().size()];
             vals = entry.getValue().toArray(vals);
+            //System.out.println("-----"+scope+"-----");
+            //System.out.println("...."+entry.getValue().toString()+"....");
             for (int i = 0; i < vals.length; i++) {
+                //**
+                //System.out.println(i+":::");
                 if(confidences.get(vals[i]) != null) {
                     HashSet<String> used = new HashSet<String>();
+                    //System.out.print(vals[i]+": ");
                     for(int j = 0; j < vals.length; j++){
-                        if(confidences.get(vals[i]).get(vals[j]) != null) {
-                            used.add(vals[j]);
+                        //System.out.print("["+vals[j]+"],");
+                        if(j == i) {
+                            continue;
                         }
-                        if(j == i) j++;
+                        //System.out.print(vals[j]+",");
+                        //if(confidences.get(vals[i]).get(vals[j]) != null) {
+                        //System.out.print(vals[j]+", ");
+                        used.add(vals[j]);
+                        //}
                     }
+                    //System.out.println();
                     for(HashMap.Entry<String, Double> entry2 : confidences.get(vals[i]).entrySet()){
                         if(!used.contains(entry2.getKey())){
-                            System.out.printf("bug: %s in %s, pair: (%s, %s), support: %d, confidence: %.2f%%\n", vals[i], scope, vals[i], entry2.getKey(), covp.get(vals[i]).get(entry2.getKey()).intValue(), confidences.get(vals[i]).get(entry2.getKey()).doubleValue()*100.00);
+                            //bugCount++;
+                            if(vals[i].compareTo(entry2.getKey()) < 0 ){
+                                System.out.printf("bug: %s in %s, pair: (%s, %s), support: %d, confidence: %.2f%%\n", vals[i], scope, vals[i], entry2.getKey(), covp.get(vals[i]).get(entry2.getKey()).intValue(), confidences.get(vals[i]).get(entry2.getKey()).doubleValue()*100.00);
+                            } else {
+                                System.out.printf("bug: %s in %s, pair: (%s, %s), support: %d, confidence: %.2f%%\n", vals[i], scope, entry2.getKey(), vals[i], covp.get(vals[i]).get(entry2.getKey()).intValue(), confidences.get(vals[i]).get(entry2.getKey()).doubleValue()*100.00);
+                            }
                         }
                     }
                 }
+                //*/
             }
+            //System.out.println();
         }
-
         /**
-        // Basic printing for testing graph completion / correctness.
-        for (HashMap.Entry<String, HashSet<String>> entry : graph.entrySet()) {
-            String key = entry.getKey();
-            HashSet<String> val = entry.getValue();
-            System.out.print(key + ": {" + val.toArray()[0]);
-            boolean b = false;
-            for (String str : val) {
-                if(b) {
-                    System.out.print(", " + str);
-                } else {
-                    b = true;
-                }
-            }
-            System.out.println("}");
-        }//*/
         try {
             Thread.sleep(10000);
         } catch (InterruptedException e) {
             e.printStackTrace();
-        }
+        }//*/
     }
 
     public static HashMap<String, Integer> getCoverage(HashMap<String, HashSet<String>> graph) {
@@ -133,31 +156,44 @@ public class ProcessLLVM {
             String key = entry.getKey();
             String vals[] = new String[entry.getValue().size()];
             vals = entry.getValue().toArray(vals);
-            for (int i = 0; i < vals.length; i++) {
-                for(int j = i + 1; j < vals.length; j++){
+            //System.out.println(key+":");
+            for (int a = 0; a < vals.length; a++) {
+                for(int b = a + 1; b < vals.length; b++){
                     //Pair<String, String> key = getPair(vals[i],vals[j], 0);
-                    if(covp.get(vals[i]) == null) {
+                    //if((vals[a].equals("ap_exists_config_define") && vals[b].equals("apr_file_open_stdout")) || (vals[b].equals("ap_exists_config_define") && vals[a].equals("apr_file_open_stdout"))){
+                    //    System.out.println(key+": "+ vals[a] + ", " + vals[b]);
+                    //}
+                    if(covp.get(vals[a]) == null) {
                         HashMap<String, Integer> tmp = new HashMap<>();
-                        tmp.put(vals[j], 1);
-                        covp.put(vals[i], tmp);
-                    } else if(covp.get(vals[i]).get(vals[j]) == null) {
-                        covp.get(vals[i]).put(vals[j], 1);
+                        tmp.put(vals[b], 1);
+                        covp.put(vals[a], tmp);
+                        //System.out.print("1("+vals[i]+","+vals[j]+","+covp.get(vals[i]).get(vals[j])+")\t");
+                    } else if(covp.get(vals[a]).get(vals[b]) == null) {
+                        //System.out.println(covp.get(vals[a]).get(vals[b]));
+                        covp.get(vals[a]).put(vals[b], 1);
+                        //System.out.print("2("+vals[i]+","+vals[j]+","+1+")\t");
                     } else {
-                        Integer val = covp.get(vals[i]).get(vals[j]);
-                        covp.get(vals[i]).replace(vals[j], val+1);
+                        Integer val = covp.get(vals[a]).get(vals[b]);
+                        covp.get(vals[a]).replace(vals[b], val+1);
+                        //System.out.print("3("+vals[i]+","+vals[j]+","+(val+1)+")\t");
                     }
-                    if(covp.get(vals[j]) == null) {
+                    if(covp.get(vals[b]) == null) {
                         HashMap<String, Integer> tmp = new  HashMap<>();
-                        tmp.put(vals[i], 1);
-                        covp.put(vals[i], tmp);
-                    } else if(covp.get(vals[j]).get(vals[i]) == null) {
-                        covp.get(vals[j]).put(vals[i], 1);
+                        tmp.put(vals[a], 1);
+                        covp.put(vals[b], tmp);
+                        //System.out.print("a("+vals[i]+","+vals[j]+","+covp.get(vals[j]).get(vals[i])+")\t");
+                    } else if(covp.get(vals[b]).get(vals[a]) == null) {
+                        //System.out.println(covp.get(vals[b]).get(vals[a]));
+                        covp.get(vals[b]).put(vals[a], 1);
+                        //System.out.print("b("+vals[i]+","+vals[j]+","+1+")\t");
                     } else {
-                        Integer val = covp.get(vals[j]).get(vals[i]);
-                        covp.get(vals[j]).replace(vals[i], val+1);
+                        Integer val = covp.get(vals[b]).get(vals[a]);
+                        //System.out.print("c("+vals[i]+","+vals[j]+","+(val+1)+")\t");
+                        covp.get(vals[b]).replace(vals[a], val+1);
                     }
                 }
             }
+            //System.out.println();
         }
         return covp;
     }
@@ -173,33 +209,34 @@ public class ProcessLLVM {
             while (line != null) {
                 try {
                     if (line.charAt(0) == 'C') {
-                        System.out.println(line);
                         firstIndex = line.indexOf('\'') + 1;
-                        String key;
+                        String key = "";
                         //To get the function <<null function>> this case is required.
-                        if(firstIndex == 0) {
-                            firstIndex = line.indexOf('<') + 2;
-                            key = line.substring(firstIndex, line.indexOf('>'));
-                        } else {
+                        if(firstIndex != 0) {
                             key = line.substring(firstIndex, line.indexOf('\'', firstIndex));
-                        }
-                        line = reader.readLine();
-                        while(line != null && line.charAt(0) == ' ') {
-                            System.out.println("::"+line);
-                            firstIndex = line.indexOf('\'') + 1;
-                            if(graph.get(key) == null) {
-                                HashSet<String> gSet = new HashSet<String>();
-                                gSet.add(line.substring(firstIndex, line.indexOf('\'', firstIndex)));
-                                graph.put(key, (HashSet)gSet.clone());
-                                continue;
-                            }
-                            //System.out.println("Key:" + key + "\nValue:"+line.substring(firstIndex, line.indexOf('\'', firstIndex))+"\nSize:"+graph.size()+"\n" );
-                            graph.get(key).add(line.substring(firstIndex, line.indexOf('\'', firstIndex)));
+                            //if(key.equals("ap_read_config")) System.out.print(key + ": {");
                             line = reader.readLine();
+                            while (line != null && line.charAt(0) == ' ') {
+                                firstIndex = line.indexOf('\'') + 1;
+                                if (line.indexOf('\'') != -1 && graph.get(key) == null) {
+                                    HashSet<String> gSet = new HashSet<String>();
+                                    gSet.add(line.substring(firstIndex, line.indexOf('\'', firstIndex)));
+                                    //if(key.equals("ap_read_config")) System.out.println("Key:" + key + "\nValue:"+line.substring(firstIndex, line.indexOf('\'', firstIndex))+"\nSize:"+graph.size()+"\n" );
+                                    //if(key.equals("ap_read_config")) System.out.print(line.substring(firstIndex, line.indexOf('\'', firstIndex)) + ", ");
+                                    graph.put(key, (HashSet) gSet.clone());
+                                } else if(line.indexOf('\'') != -1) {
+                                    //if(key.equals("ap_read_config")) System.out.println("Key:" + key + "\nValue:"+line.substring(firstIndex, line.indexOf('\'', firstIndex))+"\nSize:"+graph.size()+"\n" );
+                                    graph.get(key).add(line.substring(firstIndex, line.indexOf('\'', firstIndex)));
+                                    //if(key.equals("ap_read_config")) System.out.print(line.substring(firstIndex, line.indexOf('\'', firstIndex)) + ", ");
+                                }
+                                line = reader.readLine();
+                                //if(key.equals("ap_read_config")) System.out.println(""+(line != null) + " && " + (line.charAt(0) == ' '));
+                            }
                         }
+                        //if(key.equals("ap_read_config")) System.out.println();
                     }
                 } catch (IndexOutOfBoundsException e) {}
-
+                //System.out.println("}");
                 line = reader.readLine();
             }
         } catch (IOException e) {
