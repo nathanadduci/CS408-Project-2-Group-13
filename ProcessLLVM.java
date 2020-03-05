@@ -45,6 +45,7 @@ public class ProcessLLVM {
         } catch (IOException e) {
             e.printStackTrace();
         }
+        System.out.println("Hello World!\n\n");
 
         for (HashMap.Entry<String, HashSet<String>> entry : graph.entrySet()) {
             String key = entry.getKey();
@@ -53,6 +54,7 @@ public class ProcessLLVM {
             for (String str : (String[])val.toArray()) {
                 System.out.print(", " + str);
             }
+            System.out.println("}");
         }
     }
 }
