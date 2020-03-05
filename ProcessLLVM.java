@@ -121,27 +121,22 @@ public class ProcessLLVM {
                     //System.out.print(vals[i]+": ");
                     for(int j = 0; j < vals.length; j++){
                         //System.out.print("["+vals[j]+"],");
-                        if(j == i) {
+                        if(j == i) { //We need to ignore the first value.
                             continue;
                         }
-                        //System.out.print(vals[j]+",");
-                        //if(confidences.get(vals[i]).get(vals[j]) != null) {
-                        //System.out.print(vals[j]+", ");
                         used.add(vals[j]);
                         //}
                     }
                     //System.out.println();
                     for(HashMap.Entry<String, Double> entry2 : confidences.get(vals[i]).entrySet()){
                         if(!used.contains(entry2.getKey())){
-                            //bugCount++;
                             if(vals[i].compareTo(entry2.getKey()) < 0 ){
-                                System.out.printf("bug: %s in %s, pair: (%s, %s), support: %d, confidence: %.2f%%%s", vals[i], scope, vals[i], entry2.getKey(), covp.get(vals[i]).get(entry2.getKey()).intValue(), confidences.get(vals[i]).get(entry2.getKey()).doubleValue()*100.00, System.getProperty("line.separator"));
+                                System.out.printf("bug: %s in %s, pair: (%s, %s), support: %d, confidence: %.2f%%", vals[i], scope, vals[i], entry2.getKey(), covp.get(vals[i]).get(entry2.getKey()).intValue(), confidences.get(vals[i]).get(entry2.getKey()).doubleValue()*100.00);
                                 //System.out.printf("bug: %s in %s, pair: (%s, %s), support: %d/%d, confidence: %.2f%%\n", vals[i], scope, vals[i], entry2.getKey(), covp.get(vals[i]).get(entry2.getKey()).intValue(), covg.get(vals[i]).intValue(), confidences.get(vals[i]).get(entry2.getKey()).doubleValue()*100.00);
                             } else {
-                                System.out.printf("bug: %s in %s, pair: (%s, %s), support: %d, confidence: %.2f%%%s", vals[i], scope, entry2.getKey(), vals[i], covp.get(vals[i]).get(entry2.getKey()).intValue(), confidences.get(vals[i]).get(entry2.getKey()).doubleValue()*100.00, System.getProperty("line.separator"));
+                                System.out.printf("bug: %s in %s, pair: (%s, %s), support: %d, confidence: %.2f%%", vals[i], scope, entry2.getKey(), vals[i], covp.get(vals[i]).get(entry2.getKey()).intValue(), confidences.get(vals[i]).get(entry2.getKey()).doubleValue()*100.00);
                                 //System.out.printf("bug: %s in %s, pair: (%s, %s), support: %d/%d, confidence: %.2f%%\n", vals[i], scope, entry2.getKey(), vals[i], covp.get(vals[i]).get(entry2.getKey()).intValue(), covg.get(vals[i]).intValue(), confidences.get(vals[i]).get(entry2.getKey()).doubleValue()*100.00);
                             }
-                            //System.out.println();
                         }
                     }
                 }
