@@ -5,21 +5,20 @@ import java.util.HashMap;
 import java.util.HashSet;
 
 public class ProcessLLVM {
-    private static String OUTPUT_PATH;// = "mainout.txt";
-    private static double cThresh;// = 0.65;
-    private static Integer sThresh;// = 3;
-    private static int expandBy;// = 2;
+    private static String OUTPUT_PATH;// Output file path, what to read from.
+    private static double cThresh;// coverage % threshold
+    private static Integer sThresh;// scope threshold
+    private static int expandBy; // expansion amount for part c.
 
+    /**
+     * This main runs the core of the program, and handles for different arguments.
+     * @param args the command line arguments.
+     */
     public static void main(String[] args) {
-        //HashSet<String> set = new HashSet<>();
-        /**
-        for(String s : args) {
-            System.out.println(s);
-        }
-        System.out.println();//*/
-        if(args.length > 2) {
+        if(args.length > 2) { //Get args (if not
             OUTPUT_PATH = args[0];
             cThresh = Double.parseDouble(args[1]);
+            cThresh /= 100.00;
             sThresh = Integer.parseInt(args[2]);
         } if(args.length > 4) {
             if(args[3].equals("-c")) {
@@ -29,12 +28,11 @@ public class ProcessLLVM {
             }
         }
 
-
-        //Getting optout.txt comes from args[0], not from a file reader.
+        //The graph which will be used for all our work.
         HashMap<String, HashSet<String>> graph = new HashMap<String, HashSet<String>>();
-        if(expandBy > 0){
+        if(expandBy > 0){//Expand is requested, so call getExpandGraph.
             graph = getExpandedGraph(getGraph(), expandBy);
-        } else {
+        } else {//Expand isn't requested, get normal graph.
             graph = getGraph();
         }
 
@@ -55,7 +53,7 @@ public class ProcessLLVM {
              System.out.println("}");
          }//*/
 
-        HashMap<String, Integer> covg = getCoverage(graph);
+        HashMap<String, Integer> covg = getCoverage(graph); //get coverage of graph.
 
         /**
         //Printing to debug graph coverage.
@@ -65,19 +63,20 @@ public class ProcessLLVM {
             System.out.println(key + ": " + val);
         }//*/
 
-        HashMap<String, HashMap<String, Integer>> covp = getPairCoverage(graph);
+        HashMap<String, HashMap<String, Integer>> covp = getPairCoverage(graph); //get pair coverage.
 
         /**
-        //Printing to debug graph coverage.
+        //Printing to debug graph pair coverage.
         for (HashMap.Entry<String, HashMap<String, Integer>> entry : covp.entrySet()) {
             String key = entry.getKey();
             HashMap<String, Integer> map2 = entry.getValue();
             for(HashMap.Entry<String, Integer> entry2 : map2.entrySet()){
-                //System.out.println("("+key+", "+entry2.getKey()+"): "+entry2.getValue());
+                System.out.println("("+key+", "+entry2.getKey()+"): "+entry2.getValue());
             }
-            // System.out.println("("+key.getKey() + ", " + key.getValue() + "): " + val);
+            System.out.println("("+key.getKey() + ", " + key.getValue() + "): " + val);
         }//*/
 
+        //This is where the confidences are calculated. We elected to not put it into another loop.
         HashMap<String, HashMap<String, Double>> confidences = new HashMap<String, HashMap<String, Double>>();
         for(HashMap.Entry<String, HashMap<String, Integer>> entry : covp.entrySet()){
             String key = entry.getKey();
@@ -92,21 +91,21 @@ public class ProcessLLVM {
                         } else if(confidences.get(key).get(entry2.getKey()) == null) {
                             confidences.get(key).put(entry2.getKey(), conf);
                         } else {
-                            System.out.println("CRITICAL ERROR: DUPLICATE IN HASHMAP");
+                            System.err.println("CRITICAL ERROR: DUPLICATE IN HASHMAP");
                         }
                     }
                 }
             }
         }
         /**
+        //Print the confidence hashmap, for debugging purposes.
         for(HashMap.Entry<String, HashMap<String, Double>> entry : confidences.entrySet()){
             for(HashMap.Entry<String, Double> entry2 : entry.getValue().entrySet()){
                 System.out.printf("%.2f%%\t%s\t%s\n", entry2.getValue().doubleValue()*100.00, entry.getKey(), entry2.getKey());
             }
         }//*/
 
-        int bugCount = 0;
-
+        //Find and print all scope, A, B, coverage, and supports
         for(HashMap.Entry<String, HashSet<String>> entry : graph.entrySet()) {
             String scope = entry.getKey();
             String[] vals = new String[0];//entry.getValue().size()];
