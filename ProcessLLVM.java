@@ -15,20 +15,21 @@ public class ProcessLLVM {
      * @param args the command line arguments.
      */
     public static void main(String[] args) {
-        if(args.length > 2) { //Get args (if not
+        if(args.length > 2) { //Get standard args
             OUTPUT_PATH = args[0];
             cThresh = Double.parseDouble(args[1]);
             cThresh /= 100.00;
             sThresh = Integer.parseInt(args[2]);
-        } if(args.length > 4) {
+        } if(args.length > 4) {//Get improvement args.
             if(args[3].equals("-c")) {
                 expandBy = Integer.parseInt(args[4]);
             } else if(args[3].equals("-d")) {
-                //Correction for
+                //Improvement args for part D
             }
         }
 
         //The graph which will be used for all our work.
+        //We chose a hashmap because they are incredibly fast compared to a normal data type, and don't use any string comparisons.
         HashMap<String, HashSet<String>> graph = new HashMap<String, HashSet<String>>();
         if(expandBy > 0){//Expand is requested, so call getExpandGraph.
             graph = getExpandedGraph(getGraph(), expandBy);
@@ -81,9 +82,9 @@ public class ProcessLLVM {
         for(HashMap.Entry<String, HashMap<String, Integer>> entry : covp.entrySet()){
             String key = entry.getKey();
             for(HashMap.Entry<String, Integer> entry2 : entry.getValue().entrySet()){
-                if(entry2.getValue() >= sThresh){
+                if(entry2.getValue() >= sThresh){ //support threshold passed.
                     double conf = (double)entry2.getValue() / (double)covg.get(key);
-                    if(conf >= cThresh) {
+                    if(conf >= cThresh) { // confidence threshold passed.
                         if(confidences.get(key) == null){
                             HashMap<String, Double> tmp = new HashMap<String, Double>();
                             tmp.put(entry2.getKey(), conf);
@@ -108,151 +109,135 @@ public class ProcessLLVM {
         //Find and print all scope, A, B, coverage, and supports
         for(HashMap.Entry<String, HashSet<String>> entry : graph.entrySet()) {
             String scope = entry.getKey();
-            String[] vals = new String[0];//entry.getValue().size()];
+            String[] vals = new String[0];
             vals = entry.getValue().toArray(vals);
-            //System.out.println("-----"+scope+"-----");
-            //System.out.println("...."+entry.getValue().toString()+"....");
-            for (int i = 0; i < vals.length; i++) {
-                //**
-                //System.out.println(i+":::");
-                if(confidences.get(vals[i]) != null) {
+            for (int i = 0; i < vals.length; i++) { //Looping through all A's of the (A,B) pairs.
+                if(confidences.get(vals[i]) != null) { //
                     HashSet<String> used = new HashSet<String>();
-                    //System.out.print(vals[i]+": ");
                     for(int j = 0; j < vals.length; j++){
-                        //System.out.print("["+vals[j]+"],");
-                        if(j == i) { //We need to ignore the first value.
+                        if(j == i) { //We need to ignore the first value (A).
                             continue;
                         }
-                        used.add(vals[j]);
-                        //}
+                        used.add(vals[j]); //indicate the value was used.
                     }
-                    //System.out.println();
                     for(HashMap.Entry<String, Double> entry2 : confidences.get(vals[i]).entrySet()){
-                        if(!used.contains(entry2.getKey())){
-                            if(vals[i].compareTo(entry2.getKey()) < 0 ){
+                        if(!used.contains(entry2.getKey())){ //If the value isn't used, it violates the confidence interval.
+                            if(vals[i].compareTo(entry2.getKey()) < 0 ){ //Sort A,B.
                                 System.out.printf("bug: %s in %s, pair: (%s, %s), support: %d, confidence: %.2f%%\n", vals[i], scope, vals[i], entry2.getKey(), covp.get(vals[i]).get(entry2.getKey()).intValue(), confidences.get(vals[i]).get(entry2.getKey()).doubleValue()*100.00);
                                 //System.out.printf("bug: %s in %s, pair: (%s, %s), support: %d/%d, confidence: %.2f%%\n", vals[i], scope, vals[i], entry2.getKey(), covp.get(vals[i]).get(entry2.getKey()).intValue(), covg.get(vals[i]).intValue(), confidences.get(vals[i]).get(entry2.getKey()).doubleValue()*100.00);
-                            } else {
+                            } else { //Sort B,A.
                                 System.out.printf("bug: %s in %s, pair: (%s, %s), support: %d, confidence: %.2f%%\n", vals[i], scope, entry2.getKey(), vals[i], covp.get(vals[i]).get(entry2.getKey()).intValue(), confidences.get(vals[i]).get(entry2.getKey()).doubleValue()*100.00);
                                 //System.out.printf("bug: %s in %s, pair: (%s, %s), support: %d/%d, confidence: %.2f%%\n", vals[i], scope, entry2.getKey(), vals[i], covp.get(vals[i]).get(entry2.getKey()).intValue(), covg.get(vals[i]).intValue(), confidences.get(vals[i]).get(entry2.getKey()).doubleValue()*100.00);
                             }
                         }
                     }
                 }
-                //*/
             }
-            //System.out.println();
         }
         /**
+        //Used for testing the memory useage.
         try {
-            Thread.sleep(10000);
+            Thread.sleep(100000);
         } catch (InterruptedException e) {
             e.printStackTrace();
         }//*/
     }
 
+    /**
+     * Gets a coverage hashmap based on the graph.
+     * @param graph the coverage graph hashmap.
+     * @return the coverage hashmap.
+     */
     public static HashMap<String, Integer> getCoverage(HashMap<String, HashSet<String>> graph) {
         HashMap<String, Integer> covg = new HashMap<String, Integer>();
-        for(HashMap.Entry<String, HashSet<String>> entry : graph.entrySet()){
-            //String key = entry.getKey();
-            for (String str : entry.getValue()) {
-                if(covg.get(str) == null) {
+        for(HashMap.Entry<String, HashSet<String>> entry : graph.entrySet()){ //iterate through hashmap
+            for (String str : entry.getValue()) { // iterate through hashset.
+                if(covg.get(str) == null) { //The string isn't in the graph yet, so we initialize it with 1.
                     covg.put(str, 1);
                 } else {
                     Integer val = covg.get(str);
-                    covg.replace(str, val+1);
+                    covg.replace(str, val+1); //increment.
                 }
             }
         }
         return covg;
     }
 
+    /**
+     * Gets the pair coverage map for our graph.
+     * @param graph
+     * @return
+     */
     public static HashMap<String, HashMap<String, Integer>> getPairCoverage(HashMap<String, HashSet<String>> graph) {
         HashMap<String, HashMap<String, Integer>> covp = new HashMap<String, HashMap<String, Integer>>();
         for(HashMap.Entry<String, HashSet<String>> entry : graph.entrySet()){
             String key = entry.getKey();
             String vals[] = new String[entry.getValue().size()];
             vals = entry.getValue().toArray(vals);
-            //System.out.println(key+":");
             for (int a = 0; a < vals.length; a++) {
                 for(int b = a + 1; b < vals.length; b++){
-                    //if((vals[a].equals("ap_exists_config_define") && vals[b].equals("apr_file_open_stdout")) || (vals[b].equals("ap_exists_config_define") && vals[a].equals("apr_file_open_stdout"))){
-                    //    System.out.println(key+": "+ vals[a] + ", " + vals[b]);
-                    //}
-                    if(covp.get(vals[a]) == null) {
+                    if(covp.get(vals[a]) == null) {//The key isn't in the hashmap. Insert the key, and the value as a new hashmap
                         HashMap<String, Integer> tmp = new HashMap<>();
                         tmp.put(vals[b], 1);
                         covp.put(vals[a], tmp);
-                        //System.out.print("1("+vals[i]+","+vals[j]+","+covp.get(vals[i]).get(vals[j])+")\t");
-                    } else if(covp.get(vals[a]).get(vals[b]) == null) {
-                        //System.out.println(covp.get(vals[a]).get(vals[b]));
+                    } else if(covp.get(vals[a]).get(vals[b]) == null) {//The value isn't in the hashmap, input it into the hashmap.
                         covp.get(vals[a]).put(vals[b], 1);
-                        //System.out.print("2("+vals[i]+","+vals[j]+","+1+")\t");
-                    } else {
+                    } else {//The key and value are in both hashmaps, increment the count.
                         Integer val = covp.get(vals[a]).get(vals[b]);
                         covp.get(vals[a]).replace(vals[b], val+1);
-                        //System.out.print("3("+vals[i]+","+vals[j]+","+(val+1)+")\t");
                     }
-                    if(covp.get(vals[b]) == null) {
+                    //Below we do this again for the second type. This doubles memory useage, but it is still very small because it is a hashmap.
+                    if(covp.get(vals[b]) == null) {//The key isn't in the hashmap. Insert the key, and the value as a new hashmap
                         HashMap<String, Integer> tmp = new  HashMap<>();
                         tmp.put(vals[a], 1);
                         covp.put(vals[b], tmp);
-                        //System.out.print("a("+vals[i]+","+vals[j]+","+covp.get(vals[j]).get(vals[i])+")\t");
-                    } else if(covp.get(vals[b]).get(vals[a]) == null) {
-                        //System.out.println(covp.get(vals[b]).get(vals[a]));
+                    } else if(covp.get(vals[b]).get(vals[a]) == null) {//The value isn't in the hashmap, input it into the hashmap.
                         covp.get(vals[b]).put(vals[a], 1);
-                        //System.out.print("b("+vals[i]+","+vals[j]+","+1+")\t");
-                    } else {
+                    } else {//The key and value are in both hashmaps, increment the count.
                         Integer val = covp.get(vals[b]).get(vals[a]);
-                        //System.out.print("c("+vals[i]+","+vals[j]+","+(val+1)+")\t");
                         covp.get(vals[b]).replace(vals[a], val+1);
                     }
                 }
             }
-            //System.out.println();
         }
         return covp;
     }
 
+    /**
+     * Get the standard coverage graph.
+     * @return the coverage graph.
+     */
     public static HashMap<String, HashSet<String>> getGraph(){
         HashMap<String, HashSet<String>> graph = new HashMap<String, HashSet<String>>();
 
+        //We read from a file rather than stdin. This isn't as efficient as just reading from stdin, but we already had it working fast enough and didn't want to risk insertion of bugs.
         BufferedReader reader;
-        try {
+        try {//Read the file below.
             reader = new BufferedReader(new FileReader(OUTPUT_PATH));
             String line = reader.readLine();
             int firstIndex;
-            while (line != null) {
+            while (line != null) {//This loop keeps the function running while the second try block can fail, just to handle odd errors.
                 try {
-                    if (line.charAt(0) == 'C') {
+                    if (line.charAt(0) == 'C') { //Check if scope.
                         firstIndex = line.indexOf('\'') + 1;
                         String key = "";
-                        //To get the function <<null function>> this case is required.
-                        if(firstIndex != 0) {
+                        if(firstIndex != 0) {//To get the function <<null function>> this case is required.
                             key = line.substring(firstIndex, line.indexOf('\'', firstIndex));
-                            //if(key.equals("ap_read_config")) System.out.print(key + ": {");
                             line = reader.readLine();
-                            while (line != null && line.charAt(0) == ' ') {
-                                firstIndex = line.indexOf('\'') + 1;
-                                if (line.indexOf('\'') != -1 && graph.get(key) == null) {
+                            while (line != null && line.charAt(0) == ' ') {//Get if this is a function, log it if it is.
+                                firstIndex = line.indexOf('\'') + 1; //Search for first quote.
+                                if (line.indexOf('\'') != -1 && graph.get(key) == null) {//Add key and the node to the hashmap.
                                     HashSet<String> gSet = new HashSet<String>();
                                     gSet.add(line.substring(firstIndex, line.indexOf('\'', firstIndex)));
-                                    //if(key.equals("ap_read_config")) System.out.println("Key:" + key + "\nValue:"+line.substring(firstIndex, line.indexOf('\'', firstIndex))+"\nSize:"+graph.size()+"\n" );
-                                    //if(key.equals("ap_read_config")) System.out.print(line.substring(firstIndex, line.indexOf('\'', firstIndex)) + ", ");
                                     graph.put(key, (HashSet) gSet.clone());
-                                } else if(line.indexOf('\'') != -1) {
-                                    //if(key.equals("ap_read_config")) System.out.println("Key:" + key + "\nValue:"+line.substring(firstIndex, line.indexOf('\'', firstIndex))+"\nSize:"+graph.size()+"\n" );
+                                } else if(line.indexOf('\'') != -1) {//Add the node, so long as it is valid (not extended function).
                                     graph.get(key).add(line.substring(firstIndex, line.indexOf('\'', firstIndex)));
-                                    //if(key.equals("ap_read_config")) System.out.print(line.substring(firstIndex, line.indexOf('\'', firstIndex)) + ", ");
                                 }
                                 line = reader.readLine();
-                                //if(key.equals("ap_read_config")) System.out.println(""+(line != null) + " && " + (line.charAt(0) == ' '));
                             }
                         }
-                        //if(key.equals("ap_read_config")) System.out.println();
                     }
                 } catch (IndexOutOfBoundsException e) {}
-                //System.out.println("}");
                 line = reader.readLine();
             }
         } catch (IOException e) {
@@ -261,60 +246,22 @@ public class ProcessLLVM {
         return graph;
     }
 
+    /**
+     * Get the expanded coverage graph, according to the number of expansions requested.
+     * @param graph the normal coverage graph.
+     * @param expandBy the number of expansions to make.
+     * @return
+     */
     public static HashMap<String, HashSet<String>> getExpandedGraph(HashMap<String, HashSet<String>> graph, int expandBy){
         HashMap<String, HashSet<String>> graphExp = new HashMap<String, HashSet<String>>();
-        /**
-        BufferedReader reader;
-        try {
-            reader = new BufferedReader(new FileReader(OUTPUT_PATH));
-            String line = reader.readLine();
-            int firstIndex;
-            while (line != null) {
-                try {
-                    if (line.charAt(0) == 'C') {
-                        firstIndex = line.indexOf('\'') + 1;
-                        String key = "";
-                        //To get the function <<null function>> this case is required.
-                        if(firstIndex != 0) {
-                            key = line.substring(firstIndex, line.indexOf('\'', firstIndex));
-                            //if(key.equals("ap_read_config")) System.out.print(key + ": {");
-                            line = reader.readLine();
-                            while (line != null && line.charAt(0) == ' ') {
-                                firstIndex = line.indexOf('\'') + 1;
-                                if (line.indexOf('\'') != -1 && graph.get(key) == null) {
-                                    HashSet<String> gSet = new HashSet<String>();
-                                    gSet.add(line.substring(firstIndex, line.indexOf('\'', firstIndex)));
-                                    //if(key.equals("ap_read_config")) System.out.println("Key:" + key + "\nValue:"+line.substring(firstIndex, line.indexOf('\'', firstIndex))+"\nSize:"+graph.size()+"\n" );
-                                    //if(key.equals("ap_read_config")) System.out.print(line.substring(firstIndex, line.indexOf('\'', firstIndex)) + ", ");
-                                    graph.put(key, (HashSet) gSet.clone());
-                                } else if(line.indexOf('\'') != -1) {
-                                    //if(key.equals("ap_read_config")) System.out.println("Key:" + key + "\nValue:"+line.substring(firstIndex, line.indexOf('\'', firstIndex))+"\nSize:"+graph.size()+"\n" );
-                                    graph.get(key).add(line.substring(firstIndex, line.indexOf('\'', firstIndex)));
-                                    //if(key.equals("ap_read_config")) System.out.print(line.substring(firstIndex, line.indexOf('\'', firstIndex)) + ", ");
-                                }
-                                line = reader.readLine();
-                                //if(key.equals("ap_read_config")) System.out.println(""+(line != null) + " && " + (line.charAt(0) == ' '));
-                            }
-                        }
-                        //if(key.equals("ap_read_config")) System.out.println();
-                    }
-                } catch (IndexOutOfBoundsException e) {}
-                //System.out.println("}");
-                line = reader.readLine();
-            }
-        } catch (IOException e) {
-            e.printStackTrace();
-        }//*/
         for(HashMap.Entry<String, HashSet<String>> entry : graph.entrySet()){
             graphExp.put(entry.getKey(), new HashSet<String>());
             HashSet<String> srcExpanded = new HashSet<String>();
             int expanded = 0;
-            while(expandBy >= expanded) {
-                //System.out.println(expanded);
+            while(expandBy > expanded) {//Make sure we don't expand too much.
                 for (String src : entry.getValue().toArray(new String[0])) {
                     graphExp.get(entry.getKey()).add(src);
-                    //System.out.println(graph.get(src));
-                    if (graph.get(src) != null && !srcExpanded.contains(src)) {
+                    if (graph.get(src) != null && !srcExpanded.contains(src)) {//if the src has been expanded we don't want to waste time.
                         for (String exp : graph.get(src)) {
                             graphExp.get(entry.getKey()).add(exp);
                         }
