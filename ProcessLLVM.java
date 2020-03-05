@@ -3,7 +3,6 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Map;
 
 public class ProcessLLVM {
     private static final String OUTPUT_PATH = "optout.txt";
@@ -13,6 +12,9 @@ public class ProcessLLVM {
 
         //Getting optout.txt comes from args[0], not from a file reader.
         HashMap<String, HashSet<String>> graph = getGraph();
+
+        double cThresh = 0.65;
+        Integer sThresh = 3;
 
         HashMap<String, Integer> covg = getCoverage(graph);
 
@@ -26,7 +28,7 @@ public class ProcessLLVM {
 
         HashMap<String, HashMap<String, Integer>> covp = getPairCoverage(graph);
 
-        //**
+        /**
         //Printing to debug graph coverage.
         for (HashMap.Entry<String, HashMap<String, Integer>> entry : covp.entrySet()) {
             String key = entry.getKey();
@@ -36,6 +38,55 @@ public class ProcessLLVM {
             }
             // System.out.println("("+key.getKey() + ", " + key.getValue() + "): " + val);
         }//*/
+
+        HashMap<String, HashMap<String, Double>> confidences = new HashMap<String, HashMap<String, Double>>();
+        for(HashMap.Entry<String, HashMap<String, Integer>> entry : covp.entrySet()){
+            String key = entry.getKey();
+            for(HashMap.Entry<String, Integer> entry2 : entry.getValue().entrySet()){
+                if(entry2.getValue() >= sThresh){
+                    double conf = (double)entry2.getValue() / (double)covg.get(key);
+                    if(conf >= cThresh) {
+                        if(confidences.get(key) == null){
+                            HashMap<String, Double> tmp = new HashMap<String, Double>();
+                            tmp.put(entry2.getKey(), conf);
+                            confidences.put(key, tmp);
+                        } else if(confidences.get(key).get(entry2.getKey()) == null) {
+                            confidences.get(key).put(entry2.getKey(), conf);
+                        } else {
+                            System.out.println("CRITICAL ERROR: DUPLICATE IN HASHMAP");
+                        }
+                    }
+                }
+            }
+        }
+
+        for(HashMap.Entry<String, HashMap<String, Double>> entry : confidences.entrySet()){
+            for(HashMap.Entry<String, Double> entry2 : entry.getValue().entrySet()){
+                System.out.printf("%.2f%%\t%s\t%s\n", entry2.getValue().doubleValue()*100.00, entry.getKey(), entry2.getKey());
+            }
+        }
+
+        for(HashMap.Entry<String, HashSet<String>> entry : graph.entrySet()) {
+            String scope = entry.getKey();
+            String[] vals = new String[entry.getValue().size()];
+            vals = entry.getValue().toArray(vals);
+            for (int i = 0; i < vals.length; i++) {
+                if(confidences.get(vals[i]) != null) {
+                    HashSet<String> used = new HashSet<String>();
+                    for(int j = 0; j < vals.length; j++){
+                        if(confidences.get(vals[i]).get(vals[j]) != null) {
+                            used.add(vals[j]);
+                        }
+                        if(j == i) j++;
+                    }
+                    for(HashMap.Entry<String, Double> entry2 : confidences.get(vals[i]).entrySet()){
+                        if(!used.contains(entry2.getKey())){
+                            System.out.printf("bug: %s in %s, pair: (%s, %s), support: %d, confidence: %.2f%%\n", vals[i], scope, vals[i], entry2.getKey(), covp.get(vals[i]).get(entry2.getKey()).intValue(), confidences.get(vals[i]).get(entry2.getKey()).doubleValue()*100.00);
+                        }
+                    }
+                }
+            }
+        }
 
         /**
         // Basic printing for testing graph completion / correctness.
@@ -53,6 +104,11 @@ public class ProcessLLVM {
             }
             System.out.println("}");
         }//*/
+        try {
+            Thread.sleep(10000);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
     }
 
     public static HashMap<String, Integer> getCoverage(HashMap<String, HashSet<String>> graph) {
@@ -74,7 +130,7 @@ public class ProcessLLVM {
     public static HashMap<String, HashMap<String, Integer>> getPairCoverage(HashMap<String, HashSet<String>> graph) {
         HashMap<String, HashMap<String, Integer>> covp = new HashMap<String, HashMap<String, Integer>>();
         for(HashMap.Entry<String, HashSet<String>> entry : graph.entrySet()){
-            //String key = entry.getKey();
+            String key = entry.getKey();
             String vals[] = new String[entry.getValue().size()];
             vals = entry.getValue().toArray(vals);
             for (int i = 0; i < vals.length; i++) {
