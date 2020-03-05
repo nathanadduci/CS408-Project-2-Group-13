@@ -35,6 +35,7 @@ public class ProcessLLVM {
                                 HashSet<String> gSet = new HashSet<String>();
                                 gSet.add(line.substring(firstIndex, line.indexOf('\'', firstIndex)));
                                 graph.put(key, (HashSet)gSet.clone());
+                                continue;
                             }
                             //System.out.println("Key:" + key + "\nValue:"+line.substring(firstIndex, line.indexOf('\'', firstIndex))+"\nSize:"+graph.size()+"\n" );
                             graph.get(key).add(line.substring(firstIndex, line.indexOf('\'', firstIndex)));
@@ -48,14 +49,18 @@ public class ProcessLLVM {
         } catch (IOException e) {
             e.printStackTrace();
         }
-        System.out.println("Hello World!\n"+graph.size());
 
         for (HashMap.Entry<String, HashSet<String>> entry : graph.entrySet()) {
             String key = entry.getKey();
             HashSet<String> val = entry.getValue();
             System.out.print(key + ": {" + val.toArray()[0]);
+            boolean b = false;
             for (String str : val) {
-                System.out.print(", " + str);
+                if(b) {
+                    System.out.print(", " + str);
+                } else {
+                    b = true;
+                }
             }
             System.out.println("}");
         }
