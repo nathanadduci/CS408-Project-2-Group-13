@@ -1,5 +1,3 @@
-import javafx.util.Pair;
-
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
@@ -106,28 +104,6 @@ public class ProcessLLVM {
             }
         }
         return covp;
-    }
-
-    private static Pair<String, String> getPair(String si, String sj, int i){
-        if(si.length() > i || sj.length() > i){
-            if(si.length() > sj.length()){
-                return new Pair<String, String>(sj, si);
-            } else if(si.length() < sj.length()) {
-                return new Pair<String, String>(si, sj);
-            } else {
-                if(si.charAt(i) < sj.charAt(i)){
-                    return new Pair<String, String>(si, sj);
-                } else {
-                    return new Pair<String, String>(sj, si);
-                }
-            }
-        } else if(si.charAt(i) < sj.charAt(i)) {
-            return new Pair<String, String>(si, sj);
-        } else if(si.charAt(i) > sj.charAt(i)) {
-            return new Pair<String, String>(sj, si);
-        } else {
-            return getPair(si, sj, i+1);
-        }
     }
 
     public static HashMap<String, HashSet<String>> getGraph(){
