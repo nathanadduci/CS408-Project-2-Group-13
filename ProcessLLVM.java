@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.HashSet;
 
+
 public class ProcessLLVM {
     private static String OUTPUT_PATH;// Output file path, what to read from.
     private static double cThresh;// coverage % threshold
@@ -15,6 +16,8 @@ public class ProcessLLVM {
      * @param args the command line arguments.
      */
     public static void main(String[] args) {
+        //long start = System.currentTimeMillis();
+
         if(args.length > 2) { //Get standard args
             OUTPUT_PATH = args[0];
             cThresh = Double.parseDouble(args[2]);
@@ -107,6 +110,7 @@ public class ProcessLLVM {
         }//*/
 
         //Find and print all scope, A, B, coverage, and supports
+        int count = 0;
         for(HashMap.Entry<String, HashSet<String>> entry : graph.entrySet()) {
             String scope = entry.getKey();
             String[] vals = new String[0];
@@ -123,6 +127,7 @@ public class ProcessLLVM {
                     for(HashMap.Entry<String, Double> entry2 : confidences.get(vals[i]).entrySet()){
                         //System.out.print(used.contains(entry2.getKey()+"["+i+"], "));
                         if(!used.contains(entry2.getKey())){ //If the value isn't used, it violates the confidence interval.
+                            count++;
                             if(vals[i].compareTo(entry2.getKey()) < 0 ){ //Sort A,B.
                                 System.out.printf("bug: %s in %s, pair: (%s, %s), support: %d, confidence: %.2f%%\n", vals[i], scope, vals[i], entry2.getKey(), covp.get(vals[i]).get(entry2.getKey()).intValue(), confidences.get(vals[i]).get(entry2.getKey()).doubleValue()*100.00);
                                 //System.out.printf("bug: %s in %s, pair: (%s, %s), support: %d/%d, confidence: %.2f%%\n", vals[i], scope, vals[i], entry2.getKey(), covp.get(vals[i]).get(entry2.getKey()).intValue(), covg.get(vals[i]).intValue(), confidences.get(vals[i]).get(entry2.getKey()).doubleValue()*100.00);
@@ -142,6 +147,9 @@ public class ProcessLLVM {
         } catch (InterruptedException e) {
             e.printStackTrace();
         }//*/
+        //long end = System.currentTimeMillis();
+        //System.out.println("Count["+expandBy+"]: " + count);
+        //System.out.println("Time: " + (end-start) + "ms");
     }
 
     /**
@@ -259,9 +267,16 @@ public class ProcessLLVM {
             graphExp.put(entry.getKey(), new HashSet<String>());
             HashSet<String> srcExpanded = new HashSet<String>();
             int expanded = 0;
+
+            for(String src : entry.getValue().toArray(new String[0])) {
+                graphExp.get(entry.getKey()).add(src);
+            }
+
             while(expandBy > expanded) {//Make sure we don't expand too much.
-                for (String src : entry.getValue().toArray(new String[0])) {
-                    graphExp.get(entry.getKey()).add(src);
+                //System.out.print(expanded);
+
+                for (String src : graphExp.get(entry.getKey()).toArray(new String[0])) {
+                    //graphExp.get(entry.getKey()).add(src);
                     if (graph.get(src) != null && !srcExpanded.contains(src)) {//if the src has been expanded we don't want to waste time.
                         for (String exp : graph.get(src)) {
                             graphExp.get(entry.getKey()).add(exp);
