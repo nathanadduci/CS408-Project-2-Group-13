@@ -121,6 +121,7 @@ public class ProcessLLVM {
                         used.add(vals[j]); //indicate the value was used.
                     }
                     for(HashMap.Entry<String, Double> entry2 : confidences.get(vals[i]).entrySet()){
+                        System.out.print(used.contains(entry2.getKey()+"["+i+"], "));
                         if(!used.contains(entry2.getKey())){ //If the value isn't used, it violates the confidence interval.
                             if(vals[i].compareTo(entry2.getKey()) < 0 ){ //Sort A,B.
                                 System.out.printf("bug: %s in %s, pair: (%s, %s), support: %d, confidence: %.2f%%\n", vals[i], scope, vals[i], entry2.getKey(), covp.get(vals[i]).get(entry2.getKey()).intValue(), confidences.get(vals[i]).get(entry2.getKey()).doubleValue()*100.00);
