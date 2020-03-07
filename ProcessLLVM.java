@@ -10,34 +10,42 @@ public class ProcessLLVM {
     private static double cThresh;// coverage % threshold
     private static Integer sThresh;// scope threshold
     private static int expandBy; // expansion amount for part c.
+    private static boolean orderMat;
+    //private static HashMap<String, HashMap<String, Integer>> order;// = new HashMap<String, HashMap<String, Integer>>();
 
     /**
      * This main runs the core of the program, and handles for different arguments.
      * @param args the command line arguments.
      */
     public static void main(String[] args) {
-        //long start = System.currentTimeMillis();
+        long start = System.currentTimeMillis();
 
         if(args.length > 2) { //Get standard args
             OUTPUT_PATH = args[0];
             cThresh = Double.parseDouble(args[2]);
             cThresh /= 100.00;
             sThresh = Integer.parseInt(args[1]);
-        } if(args.length > 4) {//Get improvement args.
+        } if(args.length > 3) {//Get improvement args.
             if(args[3].equals("-c")) {
                 expandBy = Integer.parseInt(args[4]);
             } else if(args[3].equals("-d")) {
-                //Improvement args for part D
+                orderMat = true;
             }
         }
 
         //The graph which will be used for all our work.
         //We chose a hashmap because they are incredibly fast compared to a normal data type, and don't use any string comparisons.
         HashMap<String, HashSet<String>> graph = new HashMap<String, HashSet<String>>();
+        HashMap<String, HashMap<String, Integer>> order = new HashMap<>();
         if(expandBy > 0){//Expand is requested, so call getExpandGraph.
-            graph = getExpandedGraph(getGraph(), expandBy);
+            Object[] ret = getGraph();
+            graph = getExpandedGraph((HashMap<String, HashSet<String>>) ret[0], expandBy);
         } else {//Expand isn't requested, get normal graph.
-            graph = getGraph();
+            Object[] ret = getGraph();
+            graph = (HashMap<String, HashSet<String>>)ret[0];
+            if(orderMat) {
+                order = (HashMap<String, HashMap<String, Integer>>) ret[1];
+            }
         }
 
          /**
@@ -128,11 +136,15 @@ public class ProcessLLVM {
                         //System.out.print(used.contains(entry2.getKey()+"["+i+"], "));
                         if(!used.contains(entry2.getKey())){ //If the value isn't used, it violates the confidence interval.
                             count++;
+                            double orderT = 0.0;
+                            if(order.get(vals[i]) != null && order.get(vals[i]).get(entry2.getKey()) != null) {
+                                orderT = order.get(vals[i]).get(entry2.getKey()).intValue();
+                            }
                             if(vals[i].compareTo(entry2.getKey()) < 0 ){ //Sort A,B.
-                                System.out.printf("bug: %s in %s, pair: (%s, %s), support: %d, confidence: %.2f%%\n", vals[i], scope, vals[i], entry2.getKey(), covp.get(vals[i]).get(entry2.getKey()).intValue(), confidences.get(vals[i]).get(entry2.getKey()).doubleValue()*100.00);
+                                System.out.printf("bug: %s in %s, pair: (%s, %s), support: %d, confidence: %.2f%%, likelihood of false positive: %.2f%%\n", vals[i], scope, vals[i], entry2.getKey(), covp.get(vals[i]).get(entry2.getKey()).intValue(), confidences.get(vals[i]).get(entry2.getKey()).doubleValue()*100.00, orderT/(double)covp.get(vals[i]).get(entry2.getKey()).intValue()*100.00);
                                 //System.out.printf("bug: %s in %s, pair: (%s, %s), support: %d/%d, confidence: %.2f%%\n", vals[i], scope, vals[i], entry2.getKey(), covp.get(vals[i]).get(entry2.getKey()).intValue(), covg.get(vals[i]).intValue(), confidences.get(vals[i]).get(entry2.getKey()).doubleValue()*100.00);
                             } else { //Sort B,A.
-                                System.out.printf("bug: %s in %s, pair: (%s, %s), support: %d, confidence: %.2f%%\n", vals[i], scope, entry2.getKey(), vals[i], covp.get(vals[i]).get(entry2.getKey()).intValue(), confidences.get(vals[i]).get(entry2.getKey()).doubleValue()*100.00);
+                                System.out.printf("bug: %s in %s, pair: (%s, %s), support: %d, confidence: %.2f%%, likelihood of false positive: %.2f%%\n", vals[i], scope, entry2.getKey(), vals[i], covp.get(vals[i]).get(entry2.getKey()).intValue(), confidences.get(vals[i]).get(entry2.getKey()).doubleValue()*100.00, orderT/(double)covp.get(vals[i]).get(entry2.getKey()).intValue()*100.00);
                                 //System.out.printf("bug: %s in %s, pair: (%s, %s), support: %d/%d, confidence: %.2f%%\n", vals[i], scope, entry2.getKey(), vals[i], covp.get(vals[i]).get(entry2.getKey()).intValue(), covg.get(vals[i]).intValue(), confidences.get(vals[i]).get(entry2.getKey()).doubleValue()*100.00);
                             }
                         }
@@ -147,9 +159,9 @@ public class ProcessLLVM {
         } catch (InterruptedException e) {
             e.printStackTrace();
         }//*/
-        //long end = System.currentTimeMillis();
-        //System.out.println("Count["+expandBy+"]: " + count);
-        //System.out.println("Time: " + (end-start) + "ms");
+        long end = System.currentTimeMillis();
+        System.out.println("Count["+expandBy+"]: " + count);
+        System.out.println("Time: " + (end-start) + "ms");
     }
 
     /**
@@ -216,8 +228,10 @@ public class ProcessLLVM {
      * Get the standard coverage graph.
      * @return the coverage graph.
      */
-    public static HashMap<String, HashSet<String>> getGraph(){
+    public static Object[] getGraph(){
         HashMap<String, HashSet<String>> graph = new HashMap<String, HashSet<String>>();
+        Object[] ret = new Object[2];
+        HashMap<String, HashMap<String, Integer>> order = new HashMap<>();
 
         //We read from a file rather than stdin. This isn't as efficient as just reading from stdin, but we already had it working fast enough and didn't want to risk insertion of bugs.
         BufferedReader reader;
@@ -233,8 +247,35 @@ public class ProcessLLVM {
                         if(firstIndex != 0) {//To get the function <<null function>> this case is required.
                             key = line.substring(firstIndex, line.indexOf('\'', firstIndex));
                             line = reader.readLine();
+                            //System.out.println(key + ": ");
+                            HashSet<String> traversed = new HashSet<>();
                             while (line != null && line.charAt(0) == ' ') {//Get if this is a function, log it if it is.
                                 firstIndex = line.indexOf('\'') + 1; //Search for first quote.
+
+                                if(line.indexOf('\'') != -1 && orderMat && !traversed.contains(line.substring(firstIndex, line.indexOf('\'', firstIndex)))) {
+                                    //System.out.println(traversed.toArray().length+"\n"+traversed.contains(line.substring(firstIndex, line.indexOf('\'', firstIndex))));
+                                    for (String str : traversed.toArray(new String[0])) {
+                                        if (order.get(str) == null){
+                                            HashMap<String, Integer> tmp = new HashMap<String, Integer>();
+                                            tmp.put(line.substring(firstIndex, line.indexOf('\'', firstIndex)), 1);
+                                            //System.out.println("1" + ": " + str + ", " + line.substring(firstIndex, line.indexOf('\'', firstIndex)));
+                                            order.put(str, tmp);
+                                            //System.out.println(order.size());
+                                        } else if (order.get(str).get(line.substring(firstIndex, line.indexOf('\'', firstIndex))) == null) {//The value isn't in the hashmap, input it into the hashmap.
+                                            //System.out.println("2" + ": " + str + ", " + line.substring(firstIndex, line.indexOf('\'', firstIndex)));
+                                            order.get(str).put(line.substring(firstIndex, line.indexOf('\'', firstIndex)), 1);
+                                            //System.out.println(order.size());
+                                        } else {//The key and value are in both hashmaps, increment the count.
+                                            //System.out.println("3" + ": " + str + ", " + line.substring(firstIndex, line.indexOf('\'', firstIndex)));
+                                            Integer val = order.get(str).get(line.substring(firstIndex, line.indexOf('\'', firstIndex)));
+                                            order.get(str).replace(line.substring(firstIndex, line.indexOf('\'', firstIndex)), val + 1);
+                                            //System.out.println(order.size());
+                                        }
+
+                                    }
+                                    traversed.add(line.substring(firstIndex, line.indexOf('\'', firstIndex)));
+                                    //System.out.println(traversed.toArray().length);
+                                }
                                 if (line.indexOf('\'') != -1 && graph.get(key) == null) {//Add key and the node to the hashmap.
                                     HashSet<String> gSet = new HashSet<String>();
                                     gSet.add(line.substring(firstIndex, line.indexOf('\'', firstIndex)));
@@ -252,7 +293,9 @@ public class ProcessLLVM {
         } catch (IOException e) {
             e.printStackTrace();
         }
-        return graph;
+        ret[0] = graph;
+        ret[1] = order;
+        return ret;
     }
 
     /**
@@ -274,17 +317,22 @@ public class ProcessLLVM {
 
             while(expandBy > expanded) {//Make sure we don't expand too much.
                 //System.out.print(expanded);
+                HashSet<String> newExpanded = new HashSet<String>();
 
                 for (String src : graphExp.get(entry.getKey()).toArray(new String[0])) {
                     //graphExp.get(entry.getKey()).add(src);
                     if (graph.get(src) != null && !srcExpanded.contains(src)) {//if the src has been expanded we don't want to waste time.
                         for (String exp : graph.get(src)) {
-                            graphExp.get(entry.getKey()).add(exp);
+                            newExpanded.add(exp);
+                            //graphExp.get(entry.getKey()).add(exp);
                         }
-                        graphExp.get(entry.getKey()).remove(entry.getKey());
                         srcExpanded.add(src);
                     }
                 }
+                for(String exp : newExpanded.toArray(new String[0])) {
+                    graphExp.get(entry.getKey()).add(exp);
+                }
+                graphExp.get(entry.getKey()).remove(entry.getKey());
                 expanded++;
             }
         }
